@@ -24,6 +24,14 @@ target_link_libraries(
   ActsExampleGeometryGeneric
   PRIVATE ${_common_libraries} ActsExamplesDetectorGeneric)
 
+# TrangleMesh detector
+add_executable(
+  ActsExampleGeometryTriangleMesh
+  TriangleMeshGeometryExample.cpp)
+target_link_libraries(
+  ActsExampleGeometryTriangleMesh
+  PRIVATE ${_common_libraries} ActsExamplesDetectorGeneric)
+
 # Generic detector with IOV based alignment
 add_executable(
   ActsExampleGeometryAligned
