@@ -43,7 +43,9 @@ class TriangleMesh : public IVisualization {
   /// @param prec The output precission with std::setprecision
   /// @param scale An (optional) scaling for the writing out
   TriangleMesh(unsigned int prec = 4, double scale = 1.)
-      : m_outputPrecision(prec), m_outputScalor(scale) {}
+      : m_outputPrecision(prec), m_outputScalor(scale), m_surface_count(0), m_surface_intersection_count(0), m_face_intersection_count(0) {}
+
+  void surface(const Surface& surface, const GeometryContext& gctx) final;
 
   /// @copydoc Acts::IVisualization::vertex()
   void vertex(const Vector3D& vtx, ColorRGB color = {0, 0, 0}) final;
@@ -82,7 +84,22 @@ class TriangleMesh : public IVisualization {
   /// The object data to be written
   std::vector<VertexType> m_vertices;
   std::vector<FaceType> m_faces;
-  // std::vector<LineType> m_lines;
+  std::map<const FaceType, SurfaceIntersection> m_surface_intersect;
+  std::map<const FaceType, unsigned int> m_surface_intersect_count;
+  std::map<const FaceType, unsigned int> m_surface_intersect_type;
+  SurfaceIntersection m_surface_intersection;
+  unsigned int m_surface_count;
+  unsigned int m_surface_type;
+  unsigned int m_surface_intersection_count;
+  unsigned int m_face_intersection_count;
+
+  std::map<const FaceType, bool> m_face_intersect;
+
+  bool intersect(const Vector3D& position,
+                  const Vector3D& direction,
+                  const Vector3D& a,
+                  const Vector3D& b,
+                  const Vector3D& c) const;
 };
 
 #include "detail/TriangleMesh.ipp"

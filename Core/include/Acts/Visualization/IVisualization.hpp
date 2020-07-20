@@ -10,6 +10,7 @@
 
 #include "Acts/Utilities/Definitions.hpp"
 #include "Acts/Visualization/ViewConfig.hpp"
+#include "Acts/Surfaces/Surface.hpp"
 
 #include <array>
 #include <fstream>
@@ -24,6 +25,8 @@ namespace Acts {
 class IVisualization {
  public:
   using FaceType = std::vector<size_t>;
+
+  virtual void surface(const Surface& surface, const GeometryContext& gctx);
 
   /// Draw a vertex at a given location and a color.
   /// @param vtx The vertex position

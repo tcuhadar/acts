@@ -8,6 +8,9 @@
 
 #include "Acts/Visualization/IVisualization.hpp"
 
+void Acts::IVisualization::surface(const Surface& /* surface */, const GeometryContext& /* gctx */) {
+}
+
 void Acts::IVisualization::vertex(const Vector3F& vtx, ColorRGB color) {
   Vector3D vtxd = vtx.template cast<double>();
   vertex(vtxd, color);

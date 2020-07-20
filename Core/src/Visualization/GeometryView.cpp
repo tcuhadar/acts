@@ -39,10 +39,14 @@ void Acts::GeometryView::drawSurface(IVisualization& helper,
                                      const GeometryContext& gctx,
                                      const Transform3D& transform,
                                      const ViewConfig& ViewConfig) {
+  std::cout << "GV::drawSurface " << &surface << std::endl;
   Polyhedron surfaceHedron =
       surface.polyhedronRepresentation(gctx, ViewConfig.nSegments);
   if (not transform.isApprox(Transform3D::Identity())) {
     surfaceHedron.move(transform);
+  }
+  if (ViewConfig.visible) {
+    helper.surface(surface, gctx);
   }
   drawPolyhedron(helper, surfaceHedron, ViewConfig);
 }

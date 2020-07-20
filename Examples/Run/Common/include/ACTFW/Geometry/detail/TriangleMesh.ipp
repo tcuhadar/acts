@@ -7,6 +7,22 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 template <typename T>
+void TriangleMesh<T>::surface(const Surface& surface, const GeometryContext& gctx) {
+  const Vector3D position(0.0, 0.0, 0.0);
+  const Vector3D direction(1.0, 0.0, 0.0);
+  const BoundaryCheck& bcheck(true);
+
+  std::cout << "TriangleMesh::surface " << surface.type() << std::endl;
+  m_surface_intersection = surface.intersect(gctx, position, direction, bcheck);
+  std::cout << "  " << (bool)m_surface_intersection << std::endl;
+  m_surface_count++;
+  m_surface_type = surface.type();
+  if (m_surface_intersection) {
+    m_surface_intersection_count++;
+  }
+}
+
+template <typename T>
 void TriangleMesh<T>::vertex(const Vector3D& /* vtx */, ColorRGB /* color */) {
   std::cout << "TriangleMesh::vertex() NOT IMPLEMENTED" << std::endl;
   // m_vertexColors[m_vertices.size()] = color;
@@ -70,14 +86,26 @@ void TriangleMesh<T>::faces(const std::vector<Vector3D>& vtxs,
         std::transform(rawFace.begin(), rawFace.end(), rawFace.begin(),
                        [&](size_t& iv) { return (iv + vtxoffs); });
         m_faces.push_back(rawFace);
+        m_surface_intersect[rawFace] = m_surface_intersection;
+        m_surface_intersect_count[rawFace] = m_surface_count;
+        m_surface_intersect_type[rawFace] = m_surface_type;
+
+        // std::cout << face[0] << std::endl;
+        // std::cout << vtxs[face[0]] << std::endl;
+        const Vector3D position(0.0, 0.0, 0.0);
+        const Vector3D direction(1.0, 0.0, 0.0);
+        m_face_intersect[rawFace] = intersect(position, direction, vtxs[face[0]], vtxs[face[1]], vtxs[face[2]]);
+        if (m_face_intersect[rawFace]) {
+          m_face_intersection_count++;
+        }
       }
     }
   }
 }
 
 template <typename T>
-void TriangleMesh<T>::write(const std::string& path) const {
-  std::cout << "TriangleMesh::write(" << path << ") NOT IMPLEMENTED" << std::endl;
+void TriangleMesh<T>::write(const std::string& /* path */) const {
+  // std::cout << "TriangleMesh::write(" << path << ") NOT IMPLEMENTED" << std::endl;
   // std::ofstream os;
   // std::string objectpath = path;
   // if (not IVisualization::hasExtension(objectpath)) {
@@ -96,7 +124,12 @@ void TriangleMesh<T>::write(const std::string& path) const {
 
 template <typename T>
 void TriangleMesh<T>::write(std::ostream& /* os */) const {
-  std::cout << "TriangleMesh " << m_vertices.size() << " vertices, " << m_faces.size() << " faces" << std::endl;
+  std::cout << "TriangleMesh " << m_vertices.size() << " vertices, "
+                               << m_faces.size() << " faces, "
+                               << m_surface_count << " surfaces, "
+                               << m_surface_intersection_count << " surface intersects, "
+                               << m_face_intersection_count << " face intersects"
+                               << std::endl;
 
   std::ofstream tos;
   tos.open("TriangleMesh.obj");
@@ -107,13 +140,37 @@ void TriangleMesh<T>::write(std::ostream& /* os */) const {
         << m_outputScalor * vtx.z() << "\n";
   }
 
-  for (const FaceType& fc : m_faces) {
-    tos << "f";
-    for (size_t i = 0; i < fc.size(); i++) {
-      tos << " " << fc[i] + 1;
+  // Surface
+  // for (const FaceType fc : m_faces) {
+  //   SurfaceIntersection si = m_surface_intersect.at(fc);
+  //   if (si) {
+  //     tos << "f";
+  //     for (size_t i = 0; i < fc.size(); i++) {
+  //       tos << " " << fc[i] + 1;
+  //     }
+  //     tos << "  # " << m_surface_intersect_count.at(fc);
+  //     tos << "\n";
+  //   }
+  // }
+
+  // Faces
+  for (const FaceType fc : m_faces) {
+    bool fi = (bool)m_surface_intersect.at(fc);
+    unsigned int type = m_surface_intersect_type.at(fc);
+    if (fi && type == 4) {
+      tos << "# " << m_surface_intersect_count.at(fc) << " "
+          << type << " "
+          << (bool)m_surface_intersect.at(fc)
+          << " " << (bool)m_face_intersect.at(fc)
+          << "\n";
+      tos << "f";
+      for (size_t i = 0; i < fc.size(); i++) {
+        tos << " " << fc[i] + 1;
+      }
+      tos << "\n";
     }
-    tos << "\n";
   }
+
 
   tos.close();
   // std::stringstream sterile;
@@ -203,4 +260,24 @@ void TriangleMesh<T>::clear() {
   // m_lineColors.clear();
   // m_vertexColors.clear();
   // m_faceColors.clear();
+}
+
+// from: https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
+template <typename T>
+bool TriangleMesh<T>::intersect(const Vector3D& position,
+                                const Vector3D& direction,
+                                const Vector3D& a,
+                                const Vector3D& b,
+                                const Vector3D& c) const {
+   Vector3D e1 = b - a;
+   Vector3D e2 = c - a;
+   Vector3D n = e1.cross(e2);  // out
+   float det = -direction.dot(n);
+   float invdet = 1.0/det;
+   Vector3D ao  = position - a;
+   Vector3D dao = ao.cross(direction);
+   float u =  e2.dot(dao) * invdet;  // out
+   float v = -e1.dot(dao) * invdet;  // out
+   float t =  ao.dot(n)  * invdet;  // out
+   return (det >= 1e-6 && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0);
 }
