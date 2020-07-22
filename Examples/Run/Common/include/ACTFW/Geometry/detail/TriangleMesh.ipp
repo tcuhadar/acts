@@ -9,7 +9,7 @@
 template <typename T>
 void TriangleMesh<T>::surface(const Surface& surface, const GeometryContext& gctx) {
   const Vector3D position(0.0, 0.0, 0.0);
-  const Vector3D direction(1.0, 0.0, 0.0);
+  const Vector3D direction(0.3, 0.4, 0.0);
   const BoundaryCheck& bcheck(true);
 
   std::cout << "TriangleMesh::surface " << surface.type() << std::endl;
@@ -90,10 +90,8 @@ void TriangleMesh<T>::faces(const std::vector<Vector3D>& vtxs,
         m_surface_intersect_count[rawFace] = m_surface_count;
         m_surface_intersect_type[rawFace] = m_surface_type;
 
-        // std::cout << face[0] << std::endl;
-        // std::cout << vtxs[face[0]] << std::endl;
         const Vector3D position(0.0, 0.0, 0.0);
-        const Vector3D direction(1.0, 0.0, 0.0);
+        const Vector3D direction(0.3, 0.4, 0.0);
         m_face_intersect[rawFace] = intersect(position, direction, vtxs[face[0]], vtxs[face[1]], vtxs[face[2]]);
         if (m_face_intersect[rawFace]) {
           m_face_intersection_count++;
@@ -155,7 +153,7 @@ void TriangleMesh<T>::write(std::ostream& /* os */) const {
 
   // Faces
   for (const FaceType fc : m_faces) {
-    bool fi = (bool)m_surface_intersect.at(fc);
+    bool fi = (bool)m_face_intersect.at(fc);
     unsigned int type = m_surface_intersect_type.at(fc);
     if (fi) {
       tos << "# " << m_surface_intersect_count.at(fc) << " "
@@ -264,21 +262,31 @@ void TriangleMesh<T>::clear() {
 
 // from: https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
 template <typename T>
-bool TriangleMesh<T>::intersect(const Vector3D& position,
+bool TriangleMesh<T>::intersect(const Vector3D& orig,
                                 const Vector3D& direction,
-                                const Vector3D& a,
-                                const Vector3D& b,
-                                const Vector3D& c) const {
-   Vector3D e1 = b - a;
-   Vector3D e2 = c - a;
-   Vector3D dir = direction.normalized();
-   Vector3D n = dir.cross(e2);  // out
-   float det = e1.dot(n);
-   float invdet = 1.0/det;
-   Vector3D ao  = position - a;
-   double u = (ao.dot(n)) * invdet;
-   Vector3D q = ao.cross(e1);
-   double v = (dir.dot(q)) * invdet;
-   double t = (e2.dot(q)) * invdet;
-   return (det >= 1e-6 && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0);
+                                const Vector3D& v0,
+                                const Vector3D& v1,
+                                const Vector3D& v2) const {
+    Vector3D v0v1 = v1 - v0; 
+    Vector3D v0v2 = v2 - v0; 
+    Vector3D dir = direction.normalized();
+    Vector3D pvec = dir.cross(v0v2); 
+    float det = v0v1.dot(pvec); 
+    // ray and triangle are parallel if det is close to 0
+    if (fabs(det) < 1e-6) return false; 
+    double invDet = 1 / det; 
+ 
+    Vector3D tvec = orig - v0; 
+    double u = tvec.dot(pvec) * invDet; 
+    if (u < 0 || u > 1) return false; 
+ 
+    Vector3D qvec = tvec.cross(v0v1); 
+    double v = dir.dot(qvec) * invDet; 
+    if (v < 0 || u + v > 1) return false; 
+ 
+    double t = v0v2.dot(qvec) * invDet; 
+    if (t < 0) return false;
+    std::cout << "det = "<< det << " t =  " << t << " u = " << u << " v = " << v << " u+v = " << (u+v) << std::endl;
+ 
+    return true; 
 }
