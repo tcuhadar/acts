@@ -89,10 +89,15 @@ int processGeometry(int argc, char* argv[], FW::IBaseDetector& detector) {
       auto cfg = FW::Options::readObjTrackingGeometryWriterConfig(
           vm, "ObjTrackingGeometryWriter", volumeLogLevel);
       cfg.containerView.triangulate = true;
+      cfg.containerView.visible = false;
       cfg.volumeView.triangulate = true;
+      cfg.volumeView.visible = false;
       cfg.sensitiveView.triangulate = true;
+      cfg.sensitiveView.visible = true;
       cfg.passiveView.triangulate = true;
+      cfg.passiveView.visible = false;
       cfg.gridView.triangulate = true;
+      cfg.gridView.visible = false;
 
       Acts::TriangleMesh triangleMesh(cfg.outputPrecision, cfg.outputScalor);
 

@@ -157,7 +157,7 @@ void TriangleMesh<T>::write(std::ostream& /* os */) const {
   for (const FaceType fc : m_faces) {
     bool fi = (bool)m_surface_intersect.at(fc);
     unsigned int type = m_surface_intersect_type.at(fc);
-    if (fi && type == 4) {
+    if (fi) {
       tos << "# " << m_surface_intersect_count.at(fc) << " "
           << type << " "
           << (bool)m_surface_intersect.at(fc)
@@ -271,13 +271,14 @@ bool TriangleMesh<T>::intersect(const Vector3D& position,
                                 const Vector3D& c) const {
    Vector3D e1 = b - a;
    Vector3D e2 = c - a;
-   Vector3D n = e1.cross(e2);  // out
-   float det = -direction.dot(n);
+   Vector3D dir = direction.normalized();
+   Vector3D n = dir.cross(e2);  // out
+   float det = e1.dot(n);
    float invdet = 1.0/det;
    Vector3D ao  = position - a;
-   Vector3D dao = ao.cross(direction);
-   float u =  e2.dot(dao) * invdet;  // out
-   float v = -e1.dot(dao) * invdet;  // out
-   float t =  ao.dot(n)  * invdet;  // out
+   double u = (ao.dot(n)) * invdet;
+   Vector3D q = ao.cross(e1);
+   double v = (dir.dot(q)) * invdet;
+   double t = (e2.dot(q)) * invdet;
    return (det >= 1e-6 && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0);
 }
